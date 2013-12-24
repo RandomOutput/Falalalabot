@@ -45,32 +45,39 @@ class FaLaLaLaBot:
 			results = self.api.GetSearch(term='tis the season to', result_type=self.result_type)
 		except twitter.TwitterError as e:
 			print "Twitter Error: ", e.message 
-			sys.exit(0)
+			self.nextPushTime = time.time() + failureInterval
+			return
 		except:
 			print "Unexpected error in twitter search: ", sys.exc_info()[0]
-			sys.exit(0)
+			self.nextPushTime = time.time() + failureInterval
+			return
 
 		resultText = list()
 		regexedList = list()
+		userList = list()
 
 		for r in results:
-			resultText.append(r.text)
+			resultText.append(r)
 		#	print "\n", r.text
 
 		#print "------"
 
 		for t in resultText:
-			reged = re.search('(Tis the season to be )([a-zA-Z][a-zA-Z -]+[a-zA-Z])', t)
+			reged = re.search('(Tis the season to be )([a-zA-Z][a-zA-Z -]+[a-zA-Z])', t.text)
 
 			if(reged != None and re.search(noGo, str(reged.group(2))) == None):
+				userList.append(t.user)
 				regexedList.append(str(reged.group(2)))
 		
 		while(True):
 			if(len(regexedList) > 0):
-				toBeString = regexedList[random.randint(0,len(regexedList)-1)]
-				post = str("'Tis the season to be " + toBeString + ". Falalalala. Lalalala.")
+				randIndex = random.randint(0,len(regexedList)-1)
+				toBeString = regexedList[randIndex]
+				user = userList[randIndex]
+				post = str("'Tis the season to be " + toBeString + ". Falalalala. Lalalala. via @" + user.screen_name)
 
 				if(len(post) <= 140):
+					#print post
 					self.pushPost(post)
 					self.usedStrings.append(toBeString)
 					break
