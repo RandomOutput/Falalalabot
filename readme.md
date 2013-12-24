@@ -9,4 +9,3 @@ FaLaLaLaBot is a very simple twitter bot that find tweets once an hour where peo
 - python-twitter: https://github.com/bear/python-twitter.
 - A twitter account with an active application attached.
 - a config.py with your login credentials.
--
