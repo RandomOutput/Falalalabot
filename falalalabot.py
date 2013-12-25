@@ -4,6 +4,7 @@ import configs
 import sys
 import re
 import random
+import logging
 
 class FaLaLaLaBot:
 
@@ -16,14 +17,16 @@ class FaLaLaLaBot:
 		self.result_type = 'recent'
 		self.usedStrings = list()
 
+		logging.basicConfig(filename='falalalalog.log',level=logging.INFO)
+
 		try:
 			self.api = twitter.Api(consumer_key=configs.consumer_key, consumer_secret=configs.consumer_secret, access_token_key=configs.access_token_key, access_token_secret=configs.access_token_secret)
 			self.api.VerifyCredentials()
 		except twitter.TwitterError as e:
-			print "Twitter Error: ", e.message
+			logging.error("TwitterError: " + str(e.message[0]))
 			sys.exit(0)
 		except:
-			print "Unexpected error in API authentication: ", sys.exc_info()[0]
+			logging.error("Unexpected error in API authentication: " + str(sys.exc_info()[0]))
 			sys.exit(0)
 
 		#self.makePost()
@@ -44,12 +47,12 @@ class FaLaLaLaBot:
 		try:
 			results = self.api.GetSearch(term='tis the season to', result_type=self.result_type)
 		except twitter.TwitterError as e:
-			print "Twitter Error: ", e.message 
-			self.nextPushTime = time.time() + failureInterval
+			logging.error("TwitterError in search: " + str(e.message[0]))
+			self.nextPushTime = time.time() + self.failureInterval
 			return
 		except:
-			print "Unexpected error in twitter search: ", sys.exc_info()[0]
-			self.nextPushTime = time.time() + failureInterval
+			logging.error("Unexpected error in Search: " + str(sys.exc_info()[0]))
+			self.nextPushTime = time.time() + self.failureInterval
 			return
 
 		resultText = list()
@@ -58,9 +61,6 @@ class FaLaLaLaBot:
 
 		for r in results:
 			resultText.append(r)
-		#	print "\n", r.text
-
-		#print "------"
 
 		for t in resultText:
 			reged = re.search('(Tis the season to be )([a-zA-Z][a-zA-Z -]+[a-zA-Z])', t.text)
@@ -78,23 +78,28 @@ class FaLaLaLaBot:
 
 				if(len(post) <= 140):
 					#print post
-					self.pushPost(post)
+					self.pushPost(str(post))
 					self.usedStrings.append(toBeString)
 					break
 			else:
-				print "Error: No valid tweets"
-				self.nextPushTime = time.time() + failureInterval
+				logging.warn("No valid tweets")
+				self.nextPushTime = time.time() + self.failureInterval
 				break
 
 	def pushPost(self, post):
 		try:
 			self.nextPushTime = time.time() + self.pushInterval
 			status = self.api.PostUpdate(str(post))
-			print "\n" + str(time.time()), "POSTED: ", status.text
-			print "Next Push at: " + str(self.nextPushTime) + "\n"
+			logging.info("\n" + str(time.time()) + "POSTED: " + status.text)
+			logging.info("Next Push at: " + str(self.nextPushTime))
+		except twitter.TwitterError as e:
+			logging.error("TwitterError in push: " + str(e.message[0]))
+			self.nextPushTime = time.time() + self.failureInterval
+		except NameError as e:
+			raise e
 		except:
-			print "Unexpected error in push: ", sys.exc_info()[0]
-			self.nextPushTime = time.time() + failureInterval
+			logging.error("Unexpected error in push: " + str(sys.exc_info()[0]))
+			self.nextPushTime = time.time() + self.failureInterval
 
 if __name__ == '__main__':
 	bot = FaLaLaLaBot()
